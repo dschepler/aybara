@@ -1,0 +1,10 @@
+[package]
+name = "aybara-rust"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+
+[build-dependencies]
+bindgen = "0.72.1"
+pkg-config = "0.3.33"
