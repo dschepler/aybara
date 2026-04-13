@@ -1,15 +1,29 @@
 mod bindings;
 mod clone;
+mod libnl_bindings;
 mod linux_syscalls;
 mod mount;
+mod netlink;
 
 use crate::clone::*;
 use crate::linux_syscalls::*;
 use crate::mount::*;
+use crate::netlink::*;
 use std::ffi::CString;
 use std::fs::File;
 use std::io;
 use std::io::Write;
+
+fn set_lo_interface_up() -> Result<(), Box<dyn std::error::Error>> {
+    let mut sock = NetlinkSocket::new()?;
+    sock.connect(libnl_bindings::NETLINK_ROUTE as i32)?;
+    let mut lo_iface =
+        get_netlink_route_link_uncached(&mut sock, libnl_bindings::AF_UNSPEC as i32, "lo")?;
+    let mut change_req = NetlinkRouteLink::new()?;
+    change_req.set_iff_up();
+    change_link(&mut sock, &mut lo_iface, &mut change_req, 0)?;
+    Ok(())
+}
 
 fn remap_to_root_user(uid: UserId, gid: GroupId) -> io::Result<()> {
     let mut uidmap = File::create("/proc/self/uid_map")?;
@@ -136,15 +150,17 @@ fn root_container_chroot(image_path: &str) -> io::Result<()> {
 
 fn root_container_fn(uid: UserId, gid: GroupId) {
     let image_path = "/var/tmp/container-image";
-    let res = (|| -> io::Result<()> {
+    let res = (|| -> Result<(), Box<dyn std::error::Error>> {
         remap_to_root_user(uid, gid)?;
+        set_lo_interface_up()?;
         setup_root_fs(image_path)?;
         root_container_chroot(image_path)?;
         Err(execve(
             "/bin/bash",
             ["-bash"],
             ["PATH=/usr/local/bin:/usr/bin", "USER=root"],
-        ).into())
+        )
+        .into())
     })();
     res.expect("Root container process got error");
 }

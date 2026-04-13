@@ -18,4 +18,27 @@ fn main() {
     bindings
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
+
+    let libnl_route_lib = pkg_config::Config::new()
+        .atleast_version("3.12.0")
+        .probe("libnl-route-3.0")
+        .expect("libnl-route library is required");
+
+    let libnl_bindings = bindgen::Builder::default()
+        .header("libnl_wrapper.h")
+        .blocklist_item("IPPORT_RESERVED")
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
+        .clang_args(
+            libnl_route_lib
+                .include_paths
+                .iter()
+                .map(|p| format!("-I{}", p.display())),
+        )
+        .generate()
+        .expect("Unable to generate libnl bindings");
+
+    // Write the bindings to the $OUT_DIR/libnl_bindings.rs file.
+    libnl_bindings
+        .write_to_file(out_path.join("libnl_bindings.rs"))
+        .expect("Bouldn't write libnl bindings");
 }
