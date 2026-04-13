@@ -61,6 +61,10 @@ each container only has a single user.  This means in particular:
   processes, it is necessary to have the user container be in its own PID
   namespace.  That means that root processes will see different PIDs for
   user container processes than those processes themselves do.
+* The build user container will contain completely different tmpfs
+  instances for `/tmp` and `/dev/shm`; also the build user container's
+  `/var/tmp` will be a bind mount of the root container's
+  `/var/tmp/builder` directory.
 * If the root container requires network access (as opposed to using a
   bind mount of a local repository mirror), then it will have all
   network access that the invoking user does.  It is not possible to
