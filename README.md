@@ -8,6 +8,28 @@ the user, or allow access to the setuid `newuidmap` and `newgidmap`
 wrappers.  All that is needed is a Linux kernel with the appropriate
 namespace capabilities.
 
+## Current Status
+
+This project is in a very early stage of development.  Currently, it
+only does a simple demonstration of spawning the root container.
+
+In order to test it, you will need to create an OS image at
+`/var/tmp/container-image` - such as by using `debootstrap` for
+example.  Change ownership of all files under that directory to your
+test user.  You will also need to set up some placeholder files:
+
+```shell
+cd /var/tmp/container-image/dev
+for dv in full null random tty urandom zero; do
+    rm -f $dv && touch $dv
+done
+ln -sf pts/ptmx ptmx
+```
+
+You may also want to verify that the image contains the expected
+symbolic links for `dev/fd`, `dev/stdin`, `dev/stdout`, `dev/stderr`,
+and placeholder directories for `dev/pts` and `dev/shm`.
+
 ## Design
 
 In order to achieve this, an aybara instance provides two nested
